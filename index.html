@@ -55,7 +55,7 @@
   .navrow{display:flex;justify-content:space-between;margin-top:22px;gap:10px}
   .carousel{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none;border-radius:var(--r)}
   .carousel::-webkit-scrollbar{display:none}
-  .slide{min-width:100%;scroll-snap-align:center;flex:0 0 100%}
+  .slide{min-width:100%;scroll-snap-align:center;scroll-snap-stop:always;flex:0 0 100%}
   .scard{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:30px 28px;min-height:360px;box-shadow:0 10px 28px rgba(35,25,22,.05);display:flex;flex-direction:column}
   .scard .snum{width:48px;height:48px;border-radius:14px;background:var(--soft);color:var(--teal-deep);font-weight:800;font-size:22px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
   .scard .stag{font-size:12px;font-weight:800;letter-spacing:.04em;color:var(--teal);margin-bottom:6px}
@@ -104,7 +104,7 @@
   .exsnd.off{opacity:.55}
   .excar{flex:1;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   .excar::-webkit-scrollbar{display:none}
-  .exslide{min-width:100%;flex:0 0 100%;scroll-snap-align:center;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:6px 20px 20px}
+  .exslide{min-width:100%;flex:0 0 100%;scroll-snap-align:center;scroll-snap-stop:always;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:6px 20px 20px}
   .exinner{max-width:520px;width:100%;text-align:center;display:flex;flex-direction:column;align-items:center}
   .exstep{color:#fff;font-size:20px;font-weight:800;margin-bottom:14px}
   .eximg{border-radius:16px;overflow:hidden;width:340px;max-width:94%;margin-bottom:16px;box-shadow:0 8px 24px rgba(0,0,0,.45)}
@@ -358,6 +358,23 @@ function closeEx(){Tik.forEach(function(t){if(t)clearInterval(t);});Run=SEQ.map(
 document.getElementById('bdStart').onclick=openEx;
 document.getElementById('exoClose').onclick=closeEx;
 document.getElementById('exSound').onclick=function(){soundOn=!soundOn;this.classList.toggle('off',!soundOn);this.textContent=soundOn?'🔔 소리 켜짐':'🔕 소리 꺼짐';if(soundOn)ensureAudio();};
+
+/* 한 번 스와이프에 한 장씩만 넘어가도록 (감도 낮춤) */
+function oneSwipe(el,getW,goFn){
+  var sx=0,sy=0,si=0,on=false,lock=false;
+  el.addEventListener('touchstart',function(e){if(e.touches.length>1){on=false;return;}
+    sx=e.touches[0].clientX;sy=e.touches[0].clientY;si=Math.round(el.scrollLeft/getW());on=true;lock=false;},{passive:true});
+  el.addEventListener('touchmove',function(e){if(!on||lock)return;
+    var dx=e.touches[0].clientX-sx,dy=e.touches[0].clientY-sy;
+    if(Math.abs(dx)>10||Math.abs(dy)>10){lock=true;} },{passive:true});
+  el.addEventListener('touchend',function(e){if(!on)return;on=false;
+    var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dy)>Math.abs(dx)){goFn(si);return;}          /* 세로 스크롤이면 무시 */
+    if(Math.abs(dx)>45){goFn(dx<0?si+1:si-1);}else{goFn(si);} /* 한 칸만 이동 */
+  },{passive:true});
+}
+oneSwipe(carousel,function(){return carousel.clientWidth||1;},goL);
+oneSwipe(excar,function(){return excar.clientWidth||1;},goEx);
 </script>
 </body>
 </html>
